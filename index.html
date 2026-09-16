@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Showcase interactivo de la NASA Astronomy Picture of the Day API.">
+    <link rel="shortcut icon" href="./favicon_io/favicon-32x32.png" type="image/x-icon">
     <title>Cosmos diario · NASA API</title>
     <style>
         :root {
@@ -99,10 +100,8 @@
     <header class="shell topbar">
         <a class="brand" href="#"><span class="brand-mark">✦</span> COSMOS DIARIO</a>
         <nav aria-label="Navegación principal">
-            <a href="#explore">Explorar</a>
-            <a href="#about">Sobre el proyecto</a>
             <!-- COMPLETAR: reemplaza este enlace por tu perfil o portafolio -->
-            <a href="#contact">Tu enlace ↗</a>
+            <a href="http://github.com/joacopiolapiola">Creador ↗</a>
         </nav>
     </header>
 
@@ -110,10 +109,9 @@
         <section class="shell hero">
             <div class="eyebrow">NASA · Astronomy Picture of the Day</div>
             <h1>El universo,<br>un día a la vez.</h1>
-            <p>Una ventana interactiva a las imágenes que la NASA selecciona para contar la historia del cosmos. Descubre una nueva perspectiva cada día.</p>
+            <p>Una ventana interactiva a las imágenes que la NASA selecciona para contar la historia del cosmos.</p>
             <div class="actions">
                 <a class="button" href="#explore">Ver la imagen de hoy ↓</a>
-                <a class="button secondary" href="#about">Conocer el proyecto</a>
             </div>
         </section>
 
@@ -140,6 +138,7 @@
                     <div class="card side-card">
                         <div class="eyebrow">Contexto</div>
                         <p id="description">Conecta tu clave de NASA para descubrir la explicación astronómica detrás de la imagen del día.</p>
+                        <button id="translate-button" class="button secondary" type="button">Traducir al castellano</button>
                         <div class="facts">
                             <div class="fact"><span>Publicado por</span><span id="copyright">NASA</span></div>
                             <div class="fact"><span>Formato</span><span id="media-type">—</span></div>
@@ -164,17 +163,16 @@
             <div id="contact" class="card profile">
                 <div class="eyebrow">Completar tus datos</div>
                 <!-- COMPLETAR: reemplaza los valores entre corchetes por tu información -->
-                <div class="profile-line"><span>Creado por</span><span>[TU NOMBRE]</span></div>
-                <div class="profile-line"><span>Rol / estudio</span><span>[TU ROL]</span></div>
-                <div class="profile-line"><span>Contacto</span><span>[TU EMAIL]</span></div>
-                <div class="profile-line"><span>Portafolio</span><span>[TU URL]</span></div>
+                <div class="profile-line"><span>Creado por</span><span>Joaquin Arin Britos</span></div>
+                <div class="profile-line"><span>Rol / estudio</span><span>Tecnico informatico especializado en programacion</span></div>
+                <div class="profile-line"><span>Contacto</span><span>joaquinarinbritos@gmail.com</span></div>
             </div>
         </section>
     </main>
 
     <footer>
         <div class="shell">
-            <span>© 2026 [TU NOMBRE] · Cosmos Diario</span>
+            <span>© 2026 JoaquinArinBritos · Cosmos Diario</span>
             <span>Datos proporcionados por NASA</span>
         </div>
     </footer>
@@ -195,7 +193,10 @@
         const copyright = document.querySelector("#copyright");
         const mediaType = document.querySelector("#media-type");
         const sourceLink = document.querySelector("#source-link");
+        const translateButton = document.querySelector("#translate-button");
         const today = new Date().toISOString().split("T")[0];
+        let originalDescription = description.textContent;
+        let translatedDescription = "";
 
         dateInput.max = today;
         dateInput.value = today;
@@ -219,6 +220,10 @@
                 visual.style.backgroundImage = `url("${data.hdurl || data.url}")`;
                 title.textContent = data.title;
                 description.textContent = data.explanation;
+                originalDescription = data.explanation;
+                translatedDescription = "";
+                translateButton.textContent = "Traducir al castellano";
+                translateButton.disabled = false;
                 displayDate.textContent = formatDate(data.date);
                 factDate.textContent = data.date;
                 copyright.textContent = data.copyright || "NASA";
@@ -234,7 +239,52 @@
             }
         }
 
+        async function translateDescription() {
+            if (translatedDescription) {
+                description.textContent = originalDescription;
+                translateButton.textContent = "Traducir al castellano";
+                return;
+            }
+
+            translateButton.disabled = true;
+            translateButton.textContent = "Traduciendo...";
+            try {
+                const chunks = [];
+                let remaining = originalDescription.trim();
+                while (remaining.length > 450) {
+                    let splitAt = remaining.lastIndexOf(" ", 450);
+                    if (splitAt < 1) splitAt = 450;
+                    chunks.push(remaining.slice(0, splitAt));
+                    remaining = remaining.slice(splitAt).trim();
+                }
+                if (remaining) chunks.push(remaining);
+
+                const translations = [];
+                for (let index = 0; index < chunks.length; index += 1) {
+                    const query = encodeURIComponent(chunks[index]);
+                    const response = await fetch(`https://api.mymemory.translated.net/get?q=${query}&langpair=en|es`);
+                    if (!response.ok) throw new Error("No se pudo conectar con el servicio de traducción.");
+                    const data = await response.json();
+                    const translation = data.responseData && data.responseData.translatedText;
+                    if (!translation) throw new Error("El servicio no devolvió una traducción.");
+                    translations.push(translation);
+                    translateButton.textContent = `Traduciendo ${index + 1}/${chunks.length}...`;
+                }
+
+                translatedDescription = translations.join(" ");
+                description.textContent = translatedDescription;
+                translateButton.textContent = "Ver texto original";
+            } catch (error) {
+                status.textContent = error.message;
+                status.classList.add("error");
+                translateButton.textContent = "Intentar traducir de nuevo";
+            } finally {
+                translateButton.disabled = false;
+            }
+        }
+
         loadButton.addEventListener("click", () => loadApod());
+        translateButton.addEventListener("click", translateDescription);
         todayButton.addEventListener("click", () => {
             dateInput.value = today;
             loadApod(today);
