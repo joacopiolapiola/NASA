@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Showcase interactivo de la NASA Astronomy Picture of the Day API.">
+    <title>Cosmos diario · NASA API</title>
+    <style>
+        :root {
+            --ink: #f5f7ff;
+            --muted: #9ca9c9;
+            --line: rgba(167, 190, 255, .18);
+            --panel: rgba(19, 28, 61, .72);
+            --accent: #91a7ff;
+            --accent-strong: #c7d1ff;
+            --bg: #080d22;
+        }
+
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            margin: 0;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 15% 5%, rgba(83, 104, 215, .22), transparent 32rem),
+                radial-gradient(circle at 85% 20%, rgba(97, 53, 163, .18), transparent 28rem),
+                var(--bg);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.6;
+        }
+
+        a { color: inherit; text-decoration: none; }
+        .shell { width: min(1120px, calc(100% - 40px)); margin: auto; }
+        .topbar { display: flex; align-items: center; justify-content: space-between; padding: 26px 0; }
+        .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: .02em; }
+        .brand-mark {
+            display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid var(--line);
+            border-radius: 50%; background: linear-gradient(145deg, #b9c7ff, #586cc5); color: #111834; font-weight: 900;
+        }
+        nav { display: flex; gap: 25px; color: var(--muted); font-size: .9rem; }
+        nav a:hover { color: var(--ink); }
+        .eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: .18em; font-size: .72rem; font-weight: 800; }
+        h1, h2, p { margin-top: 0; }
+        h1 { max-width: 720px; margin-bottom: 20px; font-size: clamp(3rem, 8vw, 6.7rem); line-height: .94; letter-spacing: -.07em; }
+        h2 { margin-bottom: 9px; font-size: clamp(1.8rem, 4vw, 3rem); letter-spacing: -.04em; line-height: 1.05; }
+        .muted { color: var(--muted); }
+        .hero { min-height: 66vh; display: grid; align-content: center; padding: 80px 0 105px; }
+        .hero p { max-width: 580px; color: var(--muted); font-size: 1.13rem; }
+        .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+        .button {
+            display: inline-flex; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 9px;
+            padding: 12px 19px; cursor: pointer; color: #101733; background: var(--accent-strong); font: inherit; font-weight: 800;
+            transition: transform .2s, background .2s;
+        }
+        .button:hover { transform: translateY(-2px); background: white; }
+        .button.secondary { border-color: var(--line); color: var(--ink); background: transparent; }
+        .button.secondary:hover { background: rgba(255,255,255,.08); }
+        .showcase-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr); gap: 22px; }
+        .card { border: 1px solid var(--line); border-radius: 22px; background: var(--panel); backdrop-filter: blur(18px); overflow: hidden; }
+        .visual { min-height: 570px; position: relative; display: flex; align-items: flex-end; padding: 32px; background: #101936 center / cover no-repeat; }
+        .visual::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(4,7,20,.86), transparent 65%); }
+        .visual-content { position: relative; z-index: 1; }
+        .visual h2 { max-width: 670px; margin-top: 9px; }
+        .date { color: var(--accent-strong); font-size: .85rem; }
+        .side { display: flex; flex-direction: column; gap: 22px; }
+        .side-card { padding: 27px; }
+        .side-card p { color: var(--muted); font-size: .94rem; }
+        .facts { display: grid; gap: 17px; margin: 22px 0 0; }
+        .fact { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+        .fact span:last-child { color: var(--accent-strong); text-align: right; }
+        .toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin: 25px 0 9px; }
+        label { display: grid; gap: 7px; color: var(--muted); font-size: .8rem; font-weight: 700; }
+        input {
+            border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; color: var(--ink); background: rgba(5, 9, 27, .65);
+            font: inherit; color-scheme: dark;
+        }
+        .status { min-height: 25px; color: var(--muted); font-size: .88rem; }
+        .about { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; padding: 125px 0; }
+        .about-copy p { max-width: 520px; color: var(--muted); }
+        .profile { padding: 30px; }
+        .profile-line { display: flex; justify-content: space-between; gap: 14px; padding: 15px 0; border-bottom: 1px solid var(--line); }
+        .profile-line span:first-child { color: var(--muted); }
+        .profile-line span:last-child { color: var(--accent-strong); text-align: right; }
+        footer { border-top: 1px solid var(--line); padding: 27px 0 40px; color: var(--muted); font-size: .83rem; }
+        footer .shell { display: flex; justify-content: space-between; gap: 20px; }
+        .error { color: #ffb6c3; }
+        @media (max-width: 760px) {
+            nav { display: none; }
+            .shell { width: min(100% - 28px, 600px); }
+            .hero { min-height: 70vh; padding: 55px 0 70px; }
+            .showcase-grid, .about { grid-template-columns: 1fr; }
+            .visual { min-height: 440px; padding: 22px; }
+            .about { gap: 30px; padding: 80px 0; }
+            footer .shell { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <header class="shell topbar">
+        <a class="brand" href="#"><span class="brand-mark">✦</span> COSMOS DIARIO</a>
+        <nav aria-label="Navegación principal">
+            <a href="#explore">Explorar</a>
+            <a href="#about">Sobre el proyecto</a>
+            <!-- COMPLETAR: reemplaza este enlace por tu perfil o portafolio -->
+            <a href="#contact">Tu enlace ↗</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="shell hero">
+            <div class="eyebrow">NASA · Astronomy Picture of the Day</div>
+            <h1>El universo,<br>un día a la vez.</h1>
+            <p>Una ventana interactiva a las imágenes que la NASA selecciona para contar la historia del cosmos. Descubre una nueva perspectiva cada día.</p>
+            <div class="actions">
+                <a class="button" href="#explore">Ver la imagen de hoy ↓</a>
+                <a class="button secondary" href="#about">Conocer el proyecto</a>
+            </div>
+        </section>
+
+        <section id="explore" class="shell">
+            <div class="eyebrow">La selección de hoy</div>
+            <div class="toolbar">
+                <label for="date">Elegir una fecha
+                    <input id="date" type="date">
+                </label>
+                <button id="load-button" class="button" type="button">Cargar imagen</button>
+                <button id="today-button" class="button secondary" type="button">Volver a hoy</button>
+            </div>
+            <div id="status" class="status" role="status" aria-live="polite"></div>
+
+            <div class="showcase-grid">
+                <article class="card visual" id="visual">
+                    <div class="visual-content">
+                        <div class="eyebrow">NASA / APOD</div>
+                        <h2 id="title">Cargando una historia desde el espacio...</h2>
+                        <div class="date" id="display-date">—</div>
+                    </div>
+                </article>
+                <aside class="side">
+                    <div class="card side-card">
+                        <div class="eyebrow">Contexto</div>
+                        <p id="description">Conecta tu clave de NASA para descubrir la explicación astronómica detrás de la imagen del día.</p>
+                        <div class="facts">
+                            <div class="fact"><span>Publicado por</span><span id="copyright">NASA</span></div>
+                            <div class="fact"><span>Formato</span><span id="media-type">—</span></div>
+                            <div class="fact"><span>Fecha</span><span id="fact-date">—</span></div>
+                        </div>
+                    </div>
+                    <div class="card side-card">
+                        <div class="eyebrow">Fuente</div>
+                        <p>Datos e imágenes cortesía de la NASA Astronomy Picture of the Day API.</p>
+                        <a id="source-link" class="button secondary" href="https://apod.nasa.gov/apod/astropix.html" target="_blank" rel="noreferrer">Abrir en NASA ↗</a>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <section id="about" class="shell about">
+            <div class="about-copy">
+                <div class="eyebrow">Tu historia</div>
+                <h2>Hecho para mirar más lejos.</h2>
+                <p>Este espacio es tuyo: personaliza el texto, agrega tu identidad visual y convierte esta demo en la presentación de tu proyecto con datos reales de la NASA.</p>
+            </div>
+            <div id="contact" class="card profile">
+                <div class="eyebrow">Completar tus datos</div>
+                <!-- COMPLETAR: reemplaza los valores entre corchetes por tu información -->
+                <div class="profile-line"><span>Creado por</span><span>[TU NOMBRE]</span></div>
+                <div class="profile-line"><span>Rol / estudio</span><span>[TU ROL]</span></div>
+                <div class="profile-line"><span>Contacto</span><span>[TU EMAIL]</span></div>
+                <div class="profile-line"><span>Portafolio</span><span>[TU URL]</span></div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="shell">
+            <span>© 2026 [TU NOMBRE] · Cosmos Diario</span>
+            <span>Datos proporcionados por NASA</span>
+        </div>
+    </footer>
+
+    <script>
+        // COMPLETAR: pega aquí tu clave de NASA API. Puedes obtenerla en https://api.nasa.gov/
+        const NASA_API_KEY = "HB7rAU5fEWQXoKbSCqCcfuwaJ2QZ7uLa1Rn230gM";
+        const endpoint = "https://api.nasa.gov/planetary/apod";
+        const dateInput = document.querySelector("#date");
+        const loadButton = document.querySelector("#load-button");
+        const todayButton = document.querySelector("#today-button");
+        const status = document.querySelector("#status");
+        const visual = document.querySelector("#visual");
+        const title = document.querySelector("#title");
+        const description = document.querySelector("#description");
+        const displayDate = document.querySelector("#display-date");
+        const factDate = document.querySelector("#fact-date");
+        const copyright = document.querySelector("#copyright");
+        const mediaType = document.querySelector("#media-type");
+        const sourceLink = document.querySelector("#source-link");
+        const today = new Date().toISOString().split("T")[0];
+
+        dateInput.max = today;
+        dateInput.value = today;
+
+        function formatDate(value) {
+            return new Intl.DateTimeFormat("es", { dateStyle: "long" }).format(new Date(`${value}T12:00:00`));
+        }
+
+        async function loadApod(date = dateInput.value) {
+            status.textContent = "Consultando la NASA...";
+            status.classList.remove("error");
+            loadButton.disabled = true;
+            try {
+                if (NASA_API_KEY === "TU_API_KEY") {
+                    throw new Error("Completa NASA_API_KEY en este archivo para conectar la API.");
+                }
+                const response = await fetch(`${endpoint}?api_key=${encodeURIComponent(NASA_API_KEY)}&date=${date}`);
+                if (!response.ok) throw new Error("La NASA no pudo responder a la solicitud.");
+                const data = await response.json();
+                if (data.media_type !== "image") throw new Error("La selección de esta fecha es un video. Elige otra fecha para mostrar una imagen.");
+                visual.style.backgroundImage = `url("${data.hdurl || data.url}")`;
+                title.textContent = data.title;
+                description.textContent = data.explanation;
+                displayDate.textContent = formatDate(data.date);
+                factDate.textContent = data.date;
+                copyright.textContent = data.copyright || "NASA";
+                mediaType.textContent = "Imagen";
+                sourceLink.href = data.url;
+                status.textContent = "Imagen cargada correctamente.";
+            } catch (error) {
+                status.textContent = error.message;
+                status.classList.add("error");
+                title.textContent = "Tu próxima historia espacial empieza aquí.";
+            } finally {
+                loadButton.disabled = false;
+            }
+        }
+
+        loadButton.addEventListener("click", () => loadApod());
+        todayButton.addEventListener("click", () => {
+            dateInput.value = today;
+            loadApod(today);
+        });
+        // La consulta queda lista después de completar la API key.
+        loadApod();
+    </script>
+</body>
+</html>
